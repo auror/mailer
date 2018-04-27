@@ -1,24 +1,17 @@
-# README
+# mailer
 
-This README would normally document whatever steps are necessary to get the
-application up and running.
+Developed in Ruby and Rails
 
-Things you may want to cover:
+Install dependencies
+`./install.sh`
 
-* Ruby version
+Run Server
+`rails s`
 
-* System dependencies
+Seed data is already present in schema.sql
+Users: email,password
 
-* Configuration
+Mind the poor UI. Implemented the best possible solution in the constrained time limit. 
 
-* Database creation
-
-* Database initialization
-
-* How to run the test suite
-
-* Services (job queues, cache servers, search engines, etc.)
-
-* Deployment instructions
-
-* ...
+Incomplete Implementation:
+Sending emails from Drafts -> UI is not complete. But API is.
