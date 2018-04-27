@@ -1,0 +1,276 @@
+<html>
+
+  <head>
+    <script>
+        angular.module("app", ['ngCookies', 'ngSanitize']).controller('appC', function ($scope, $http, $cookies) {
+
+            $scope.mails = []
+            $scope.page = 0
+
+            $scope.message = {}
+            $scope.rf = {}
+
+            $scope.menuItem = ""
+
+            $scope.tmail = {}
+
+            $scope.getM = function(type, page) {
+                $scope.menuItem = type.replace(/^\w/, function (chr) {
+                    return chr.toUpperCase();
+                });
+                $http({
+                    method: 'GET',
+                    url: '/threads/' + type,
+                    params: { user_id: $cookies.get('u_id'), page: page }
+                }).then(function successCallback(response) {
+                    // this callback will be called asynchronously
+                    // when the response is available
+                    console.log(response.data)
+                    $scope.mails = response.data
+                    $scope.page = page
+                }, function errorCallback(response) {
+                    // called asynchronously if an error occurs
+                    // or server returns response with an error status.
+                });
+            }
+            $scope.getM('inbox', 1)
+
+            $scope.getColor = function(mail) {
+
+                if ( !mail.is_read ) {
+                    return "bold black-text modal-trigger"
+                }
+
+                return "black-text modal-trigger"
+            }
+
+            $scope.send = function(data) {
+                console.log(data)
+                $http({
+                    method: 'POST',
+                    url: '/threads',
+                    data: data
+                }).then(function successCallback(response) {
+                    // this callback will be called asynchronously
+                    // when the response is available
+                }, function errorCallback(response) {
+                    // called asynchronously if an error occurs
+                    // or server returns response with an error status.
+
+                    M.toast({html: 'Some error occurred'})
+                });
+            }
+
+            $scope.create = function() {
+                $scope.message.type = 0
+                $scope.send(_.extend({from: $cookies.get('u_id')}, $scope.message))
+            }
+
+            $scope.save = function(isNew) {
+                if ( isNew ) {
+                    $scope.send(_.extend({
+                        from: $cookies.get('u_id'),
+                        is_draft: true
+                    }, $scope.message))
+                } else {
+                    var data = _.extend({tg_id: $scope.tmail.tg_id, from: $cookies.get('u_id'), is_draft: true}, $scope.rf)
+                    $scope.send(data)
+                }
+            }
+
+            $scope.reply = function() {
+                var data = _.extend({tg_id: $scope.tmail.tg_id, from: $cookies.get('u_id'), type: 1}, $scope.rf)
+                $scope.send(data)
+            }
+
+            $scope.forward = function () {
+                var data = _.extend({tg_id: $scope.tmail.tg_id, from: $cookies.get('u_id'), type: 2}, $scope.rf)
+                $scope.send(data)
+            }
+
+            $scope.read = function(mail) {
+
+                $scope.tmail = mail
+
+                if ( mail.is_read ) {
+                    return
+                }
+
+                $http({
+                    method: 'PUT',
+                    url: '/threads/' + mail.tg_id + '/read',
+                    params: { u_id: $cookies.get('u_id') }
+                }).then(function successCallback(response) {
+                    // this callback will be called asynchronously
+                    // when the response is available
+                }, function errorCallback(response) {
+                    // called asynchronously if an error occurs
+                    // or server returns response with an error status.
+
+                    console.log(response)
+                    M.toast({html: 'Some error occurred'})
+                });
+            }
+
+            $scope.moveToTrash = function() {
+                $http({
+                    method: 'DELETE',
+                    url: '/threads/' + $scope.tmail.tg_id,
+                    params: {u_id: $cookies.get('u_id')}
+                }).then(function successCallback(response) {
+                    // this callback will be called asynchronously
+                    // when the response is available
+                }, function errorCallback(response) {
+                    // called asynchronously if an error occurs
+                    // or server returns response with an error status.
+
+                    console.log(response)
+                    M.toast({html: 'Some error occurred'})
+                });
+            }
+
+            $scope.logout = function () {
+                $cookies.remove('l_id')
+                window.location = "/"
+            }
+        })
+    </script>
+
+    <script>
+        var elem = document.querySelector('.sidenav');
+        var instance = M.Sidenav.init(elem);
+
+        // Initialize collapsible (uncomment the lines below if you use the dropdown variation)
+        // var collapsibleElem = document.querySelector('.collapsible');
+        // var collapsibleInstance = M.Collapsible.init(collapsibleElem, options);
+
+        // Or with jQuery
+
+        $(document).ready(function () {
+            $('.sidenav').sidenav();
+        });
+
+        var elem = document.querySelector('.modal');
+        var instance = M.Modal.init(elem, {});
+
+        // Or with jQuery
+
+        $(document).ready(function () {
+            $('.modal').modal();
+        });
+    </script>
+  </head>
+
+  <body ng-app="app" ng-controller="appC">
+
+    <!-- Compose Modal Structure -->
+    <div id="modal1" class="modal">
+      <div class="modal-content">
+        <h4>Compose</h4>
+        <div class="row">
+          <div class="input-field col s12">
+            <input id="subject" type="text" ng-model="message.subject">
+            <label for="subject">Subject</label>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="input-field col s12">
+            <input id="to" type="text" ng-model="message.to">
+            <label for="to">To(, seperated)</label>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="input-field col s12">
+            <textarea id="body" class="materialize-textarea" data-length="120" ng-model="message.body"></textarea>
+            <label for="body">Body</label>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <a class="waves-effect waves-light btn modal-action modal-close" ng-click="save(true)">Save as Draft!</a>
+        <a class="waves-effect waves-light btn modal-action modal-close" ng-click="create()">Send</a>
+      </div>
+    </div>
+
+
+
+    <ul id="slide-out" class="sidenav">
+      <li>
+        <div class="user-view">
+          <div class="background">
+            <img src="http://materializecss.com/images/office.jpg">
+          </div>
+
+          <a href="#name"><span class="white-text name">Harry Potter</span></a>
+          <a href="#email"><span class="white-text email">harry@hogwarts.com</span></a>
+        </div>
+      </li>
+<!--      <li><a href="#!"><i class="material-icons">cloud</i>First Link With Icon</a></li>-->
+      <li><a class="waves-effect waves-light btn modal-trigger" href="#modal1">Compose</a></li>
+      <li><a ng-click="getM('inbox', 1)">Inbox</a></li>
+      <li><a ng-click="getM('sent', 1)">Sent</a></li>
+      <li><a ng-click="getM('drafts', 1)">Drafts</a></li>
+      <li><a ng-click="getM('trash', 1)">Trash</a></li>
+      <li>
+        <div class="divider"></div>
+      </li>
+<!--      <li><a class="subheader">Subheader</a></li>-->
+      <li><a class="waves-effect" ng-click="logout()">Logout</a></li>
+    </ul>
+    <a data-target="slide-out" class="waves-effect waves-light btn sidenav-trigger">Menu</a>
+
+    <h4>
+    <blockquote ng-bind="menuItem" class="center-align">
+      This is an example quotation that uses the blockquote tag.
+    </blockquote>
+    </h4>
+
+    <br>
+
+    <table class="centered">
+      <tbody>
+        <tr ng-repeat="mail in mails">
+          <td><a href="" data-target="eModal" ng-class="getColor(mail)" ng-bind="mail.subject" ng-click="read(mail)"></a></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div id="eModal" class="modal">
+      <div class="modal-content">
+        <div ng-repeat="m in tmail.mails">
+          <p>From: {{m.from}}</p>
+          <p>To: {{m.to}}</p>
+          <p ng-bind="m.body"></p>
+          <div class="divider"></div>
+        </div>
+
+        <div ng-show="menuItem.toLowerCase() != 'trash'">
+          <div class="row">
+            <div class="input-field col s12">
+              <input id="to" type="text" ng-model="rf.to">
+              <label for="to">To(, seperated)</label>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="input-field col s12">
+              <textarea id="body" class="materialize-textarea" data-length="120" ng-model="rf.body"></textarea>
+              <label for="body">Body</label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer" ng-show="menuItem.toLowerCase() != 'trash'">
+        <a class="waves-effect waves-light btn modal-action modal-close" ng-click="save(false)">Save as Draft!</a>
+        <a class="waves-effect waves-light btn modal-action modal-close" ng-click="reply()">Reply</a>
+        <a class="waves-effect waves-light btn modal-action modal-close" ng-click="forward()">Forward</a>
+        <a class="waves-effect waves-light btn modal-action modal-close" ng-click="moveToTrash()">Move to Trash</a>
+      </div>
+    </div>
+
+  </body>
+
+</html>
