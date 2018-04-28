@@ -8,6 +8,8 @@ Install dependencies
 Run Server
 `rails s`
 
+You can access the server at localhost:3000
+
 Seed data is already present in schema.sql
 Users: email,password
 
